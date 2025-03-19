@@ -74,6 +74,17 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         url: ws_url
       });
 
+      leftHandTopic = new ROSLIB.Topic({
+          ros: ros,
+          name: '/left_hand_pose',
+          messageType: 'geometry_msgs/PoseStamped'
+      });
+
+      rightHandTopic = new ROSLIB.Topic({
+          ros: ros,
+          name: '/right_hand_pose',
+          messageType: 'geometry_msgs/PoseStamped'
+      });
 
       poseStampedTopic = new ROSLIB.Topic({
         ros: ros,
@@ -228,6 +239,38 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
       } else {
         document.getElementById('pose').innerText = "Position: (null pose)";
+      }
+
+      for (let inputSource of session.inputSources) {
+          if (inputSource.gripSpace) {
+              let inputPose = frame.getPose(inputSource.gripSpace, xrRefSpace);
+              if (inputPose) {
+                  const ip = inputPose.transform.position;
+                  const io = inputPose.transform.orientation;
+
+                  // 生成 ROS 消息
+                  var controllerPoseMsg = new ROSLIB.Message({
+                      header: { frame_id: "world" },
+                      pose: {
+                          position: { x: -ip.z, y: -ip.x, z: ip.y },
+                          orientation: { x: io.x, y: io.y, z: io.z, w: io.w }
+                      }
+                  });
+
+                  // 区分左右手并发布到对应 ROS 话题
+                  if (inputSource.handedness === "left" && leftHandTopic) {
+                      leftHandTopic.publish(controllerPoseMsg);
+                      document.getElementById('pose').innerText += 
+                          "Left Hand Position: " + ip.x.toFixed(3) + ", " + ip.y.toFixed(3) + ", " + ip.z.toFixed(3) + "\n" +
+                          "Left Hand Orientation: " + io.x.toFixed(3) + ", " + io.y.toFixed(3) + ", " + io.z.toFixed(3) + ", " + io.w.toFixed(3) + "\n";
+                  } else if (inputSource.handedness === "right" && rightHandTopic) {
+                      rightHandTopic.publish(controllerPoseMsg);
+                      document.getElementById('pose').innerText += 
+                          "Right Hand Position: " + ip.x.toFixed(3) + ", " + ip.y.toFixed(3) + ", " + ip.z.toFixed(3) + "\n" +
+                          "Right Hand Orientation: " + io.x.toFixed(3) + ", " + io.y.toFixed(3) + ", " + io.z.toFixed(3) + ", " + io.w.toFixed(3) + "\n";
+                  }
+              }
+          }
       }
     }
 
