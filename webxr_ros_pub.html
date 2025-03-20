@@ -238,13 +238,25 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
     function updateControllerPose(frame) {
         if (leftController && leftController.gripSpace) {
-            let left_controller_pose = frame.getPose(leftController.gripSpace, xrRefSpace);
-            if (left_controller_pose) publishPose(pose, "left_controller", leftHandTopic, "pose_left_hand");
+            let pose = frame.getPose(leftController.gripSpace, xrRefSpace);
+            if (pose) {
+                publishPose(pose, "left_controller", leftHandTopic, "pose_left_hand");
+            } else {
+                console.warn("Left controller pose is undefined!");
+            }
+        } else {
+            console.warn("Left controller gripSpace is null");
         }
 
         if (rightController && rightController.gripSpace) {
-            let right_controller_pose = frame.getPose(rightController.gripSpace, xrRefSpace);
-            if (right_controller_pose) publishPose(pose, "right_controller", rightHandTopic, "pose_right_hand");
+            let pose = frame.getPose(rightController.gripSpace, xrRefSpace);
+            if (pose) {
+                publishPose(pose, "right_controller", rightHandTopic, "pose_right_hand");
+            } else {
+                console.warn("Right controller pose is undefined!");
+            }
+        } else {
+            console.warn("Right controller gripSpace is null");
         }
     }
 
