@@ -255,6 +255,14 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
               outputText += `${inputSource.handedness} Hand No gripSpace detected\n`;
           }
       }
+
+      // 如果手柄没有被检测到，显示提示
+      if (!handDetected) {
+          outputText += "No VR controllers detected! Please check your controllers.\n";
+      }
+
+      // 显示调试信息在网页上
+      document.getElementById('pose').innerText = outputText;
     }
 
     initXR();
