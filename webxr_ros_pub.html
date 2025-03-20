@@ -202,18 +202,10 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         const p = pose.transform.position;
         const o = pose.transform.orientation;
         document.getElementById('pose').innerText = "" +
-          "Position: " + p.x.toFixed(3) + ", " + p.y.toFixed(3) + ", " + p.z.toFixed(3) + "\n" +
-          "Orientation: " + o.x.toFixed(3) + ", " + o.y.toFixed(3) + ", " + o.z.toFixed(3) + ", " + o.w.toFixed(3) + "\n";
+          `Headset Position: ${p.x.toFixed(3)}, ${p.y.toFixed(3)}, ${p.z.toFixed(3)}\n` +
+          `Headset Orientation: ${o.x.toFixed(3)}, ${o.y.toFixed(3)}, ${o.z.toFixed(3)}, ${o.w.toFixed(3)}\n`;
 
         if (ros) {
-          // want to publish pose in REP-103 compliant manner
-          // At least z should be up?
-          // For now, swap position coordinates, leaving rotation un-altered.
-          // TODO: handle rotation as well
-          // references:
-          // https://www.ros.org/reps/rep-0103.html
-          // https://developer.mozilla.org/en-US/docs/Web/API/WebXR_Device_API/Geometry
-
           var poseStampedMsg = new ROSLIB.Message({
             header: {
               frame_id: "world"
@@ -248,28 +240,19 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                   const ip = inputPose.transform.position;
                   const io = inputPose.transform.orientation;
 
-                  // 生成 ROS 消息
-                  var controllerPoseMsg = new ROSLIB.Message({
-                      header: { frame_id: "world" },
-                      pose: {
-                          position: { x: -ip.z, y: -ip.x, z: ip.y },
-                          orientation: { x: io.x, y: io.y, z: io.z, w: io.w }
-                      }
-                  });
+                  // 调试信息（控制台日志）
+                  console.log(`[${inputSource.handedness} Hand] Position: (${ip.x.toFixed(3)}, ${ip.y.toFixed(3)}, ${ip.z.toFixed(3)})`);
+                  console.log(`[${inputSource.handedness} Hand] Orientation: (${io.x.toFixed(3)}, ${io.y.toFixed(3)}, ${io.z.toFixed(3)}, ${io.w.toFixed(3)})`);
 
-                  // 区分左右手并发布到对应 ROS 话题
-                  if (inputSource.handedness === "left" && leftHandTopic) {
-                      leftHandTopic.publish(controllerPoseMsg);
-                      document.getElementById('pose').innerText += 
-                          "Left Hand Position: " + ip.x.toFixed(3) + ", " + ip.y.toFixed(3) + ", " + ip.z.toFixed(3) + "\n" +
-                          "Left Hand Orientation: " + io.x.toFixed(3) + ", " + io.y.toFixed(3) + ", " + io.z.toFixed(3) + ", " + io.w.toFixed(3) + "\n";
-                  } else if (inputSource.handedness === "right" && rightHandTopic) {
-                      rightHandTopic.publish(controllerPoseMsg);
-                      document.getElementById('pose').innerText += 
-                          "Right Hand Position: " + ip.x.toFixed(3) + ", " + ip.y.toFixed(3) + ", " + ip.z.toFixed(3) + "\n" +
-                          "Right Hand Orientation: " + io.x.toFixed(3) + ", " + io.y.toFixed(3) + ", " + io.z.toFixed(3) + ", " + io.w.toFixed(3) + "\n";
-                  }
+                  // 显示在页面上
+                  document.getElementById('pose').innerText += 
+                      `[${inputSource.handedness} Hand] Position: ${ip.x.toFixed(3)}, ${ip.y.toFixed(3)}, ${ip.z.toFixed(3)}\n` +
+                      `[${inputSource.handedness} Hand] Orientation: ${io.x.toFixed(3)}, ${io.y.toFixed(3)}, ${io.z.toFixed(3)}, ${io.w.toFixed(3)}\n`;
+              } else {
+                  console.warn(`[${inputSource.handedness} Hand] No pose data available.`);
               }
+          } else {
+              console.warn(`[${inputSource.handedness} Hand] No gripSpace detected.`);
           }
       }
     }

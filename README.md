@@ -44,17 +44,17 @@ Instructions are provided for both options; I found the self-signed cert option 
 1) Phone setup
     
     1) Mark the new certificate as "trusted"
-        1) In the phone's browser, navigate to `https://<ip of the linux laptop>:9090`
-        1) You should see a "Your connection is not private" dialog (this was tested in Chrome). Click "Advanced", then "Proceed to <ip> (unsafe)". You should see a message "can upgrade only to websocket" - this can be ignored.
-    1) In the phone's browser, navigate to: https://tim-fan.github.io/webxr_ros_pub/webxr_ros_pub.html
+        1) In the phone's browser, navigate to `https://192.168.31.130:9090/`
+        2) You should see a "Your connection is not private" dialog (this was tested in Chrome). Click "Advanced", then "Proceed to <ip> (unsafe)". You should see a message "can upgrade only to websocket" - this can be ignored.
+    2) In the phone's browser, navigate to: https://zhuang-zh.github.io/webxr_ros_pub/webxr_ros_pub.html
 
         The page should look like the following:
 
         ![page screenshot](./screenshot.png)
-    1) Set the websocket url to `wss://<ip of the linux laptop>:9090`, then click connect. You should see a popup confirming a successful connection.
-    1) Click "Enter AR" to start the webxr session.
+    3) Set the websocket url to `wss://192.168.31.130:9090`, then click connect. You should see a popup confirming a successful connection.
+    4) Click "Enter AR" to start the webxr session.
 
-1) Confirm it's working
+2) Confirm it's working
 
     You should now see the device pose displayed on the phone screen, and the pose should also be publishing to ROS via the bridge server.
     
