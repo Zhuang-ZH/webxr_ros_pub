@@ -192,15 +192,28 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       }
 
       session.addEventListener('end', onSessionEnded);
+
       let canvas = document.createElement('canvas');
       gl = canvas.getContext('webgl', {
         xrCompatible: true
       });
       session.updateRenderState({ baseLayer: new XRWebGLLayer(session, gl) });
+
       session.requestReferenceSpace('local-floor').then((refSpace) => {
+        console.log("Using reference space: local-floor");
         xrRefSpace = refSpace;
         session.requestAnimationFrame(onXRFrame);
+      }).catch((error) => {
+        console.warn("⚠️ local-floor not supported, falling back to 'local'. Error:", error);
+        session.requestReferenceSpace('local').then((refSpace) => {
+            console.log("🛠 Using reference space: local");
+            xrRefSpace = refSpace;
+            session.requestAnimationFrame(onXRFrame);
+        }).catch((error) => {
+            console.error("🚨 Failed to get 'local' reference space:", error);
+        });
       });
+
     }
 
     function onRequestSessionError(ex) {
