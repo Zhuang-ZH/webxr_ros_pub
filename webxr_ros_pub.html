@@ -203,7 +203,10 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
               }
           }
           console.log("Left Controller:", leftController);
-          console.log("Right Controller:", rightController);
+          // console.log("Right Controller:", rightController);
+          console.log("Left Controller Pose:", leftController ? frame.getPose(leftController.gripSpace, xrRefSpace) : "No left controller");
+          // console.log("Right Controller Pose:", rightController ? frame.getPose(rightController.gripSpace, xrRefSpace) : "No right controller");
+
       });
 
       // Show which type of DOM Overlay got enabled (if any)
@@ -280,6 +283,12 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     }
 
     function publishPose(pose, frame_id, topic, displayId) {
+
+      if (!pose || !pose.transform) {
+          console.warn(`Skipping ${frame_id} pose update: pose or transform is undefined.`);
+          return;
+      }
+
       const p = pose.transform.position;
       const o = pose.transform.orientation;
 
