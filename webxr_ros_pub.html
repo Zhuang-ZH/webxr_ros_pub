@@ -198,6 +198,9 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       gl.bindFramebuffer(gl.FRAMEBUFFER, session.renderState.baseLayer.framebuffer);
 
       let pose = frame.getViewerPose(xrRefSpace);
+
+      let outputText = "WebXR Debug Info:\n";
+
       if (pose) {
         const p = pose.transform.position;
         const o = pose.transform.orientation;
@@ -205,31 +208,33 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           `Headset Position: ${p.x.toFixed(3)}, ${p.y.toFixed(3)}, ${p.z.toFixed(3)}\n` +
           `Headset Orientation: ${o.x.toFixed(3)}, ${o.y.toFixed(3)}, ${o.z.toFixed(3)}, ${o.w.toFixed(3)}\n`;
 
-        if (ros) {
-          var poseStampedMsg = new ROSLIB.Message({
-            header: {
-              frame_id: "world"
-            },
-            pose: {
-              position: {
-                x: -p.z,
-                y: -p.x,
-                z: p.y
-              },
-              orientation: {
-                x: o.x,
-                y: o.y,
-                z: o.z,
-                w: o.w
-              }
-            }
-          });
-          poseStampedTopic.publish(poseStampedMsg);
-        }
+        // if (ros) {
+        //   var poseStampedMsg = new ROSLIB.Message({
+        //     header: {
+        //       frame_id: "world"
+        //     },
+        //     pose: {
+        //       position: {
+        //         x: -p.z,
+        //         y: -p.x,
+        //         z: p.y
+        //       },
+        //       orientation: {
+        //         x: o.x,
+        //         y: o.y,
+        //         z: o.z,
+        //         w: o.w
+        //       }
+        //     }
+        //   });
+        //   poseStampedTopic.publish(poseStampedMsg);
+        // }
 
       } else {
         document.getElementById('pose').innerText = "Position: (null pose)";
       }
+
+      outputText += `XR Input Sources: ${session.inputSources.length}\n`;
 
       let handDetected = false; // 标记是否检测到手柄
 
@@ -254,6 +259,9 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           } else {
               outputText += `${inputSource.handedness} Hand No gripSpace detected\n`;
           }
+          if (!inputSource.gripSpace) {
+              console.warn(`[${inputSource.handedness} Hand] gripSpace is NULL`);
+          }
       }
 
       // 如果手柄没有被检测到，显示提示
@@ -266,6 +274,12 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     }
 
     initXR();
+  </script>
+
+  <script src="https://unpkg.com/vconsole@latest/dist/vconsole.min.js"></script>
+  <script>
+      var vConsole = new VConsole();
+      console.log("vConsole loaded!");
   </script>
 </body>
 
