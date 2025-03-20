@@ -243,9 +243,13 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             let displayId = source.handedness === 'left' ? 'pose_left_hand' : 'pose_right_hand';
             publishPose(controllerPose, frame_id, topic, displayId);
             debugText += `${frame_id} Pose Published\n`;
+          } else {
+            console.warn(`Failed to getPose for ${source.handedness} controller`);
+            continue;
           }
         } else {
           debugText += "No gripSpace available for an input source.\n";
+          console.warn("Input Source has no gripSpace:", source);
         }
       }
       document.getElementById("debug-info").innerText = debugText;
