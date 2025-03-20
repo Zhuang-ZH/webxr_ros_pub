@@ -181,6 +181,12 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       xrSession = session;
       console.log("XR Session started");
       xrButton.innerHTML = 'Exit AR';
+
+      session.requestReferenceSpace('local').then(refSpace => {
+        xrRefSpace = refSpace;
+        session.requestAnimationFrame(onXRFrame);
+      });
+
       xrSession.addEventListener("inputsourceschange", (event) => {
           console.log("XR Input Sources Changed:", event);
           console.log("Current Input Sources:", xrSession.inputSources);
@@ -198,22 +204,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         xrCompatible: true
       });
       session.updateRenderState({ baseLayer: new XRWebGLLayer(session, gl) });
-
-      session.requestReferenceSpace('local-floor').then((refSpace) => {
-        console.log("Using reference space: local-floor");
-        xrRefSpace = refSpace;
-        session.requestAnimationFrame(onXRFrame);
-      }).catch((error) => {
-        console.warn("⚠️ local-floor not supported, falling back to 'local'. Error:", error);
-        session.requestReferenceSpace('local').then((refSpace) => {
-            console.log("🛠 Using reference space: local");
-            xrRefSpace = refSpace;
-            session.requestAnimationFrame(onXRFrame);
-        }).catch((error) => {
-            console.error("🚨 Failed to get 'local' reference space:", error);
-        });
-      });
-
     }
 
     function onRequestSessionError(ex) {
@@ -236,102 +226,50 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       let session = frame.session;
       session.requestAnimationFrame(onXRFrame);
 
+      let debugText = "WebXR Debug Info:\n";
+      let refSpace = xrRefSpace;
+      
       gl.bindFramebuffer(gl.FRAMEBUFFER, session.renderState.baseLayer.framebuffer);
 
       let pose = frame.getViewerPose(xrRefSpace);
+      if (pose) publishPose(pose, 'world', poseViewerTopic, 'pose_viewer');
+      
+      `XR Input Sources: ${session.inputSources.length}\n`
 
-      let debugText = "WebXR Debug Info:\n";
-
-      if (pose) {
-        const p = pose.transform.position;
-        const o = pose.transform.orientation;
-        document.getElementById('pose').innerText = "" +
-          `Headset Position: ${p.x.toFixed(3)}, ${p.y.toFixed(3)}, ${p.z.toFixed(3)}\n` +
-          `Headset Orientation: ${o.x.toFixed(3)}, ${o.y.toFixed(3)}, ${o.z.toFixed(3)}, ${o.w.toFixed(3)}\n`;
-
-        debugText += ` Headset Position: ${p.x.toFixed(3)}, ${p.y.toFixed(3)}, ${p.z.toFixed(3)}\n`;
-        debugText += ` Headset Orientation: ${o.x.toFixed(3)}, ${o.y.toFixed(3)}, ${o.z.toFixed(3)}, ${o.w.toFixed(3)}\n`;
-        // if (ros) {
-        //   var poseStampedMsg = new ROSLIB.Message({
-        //     header: {
-        //       frame_id: "world"
-        //     },
-        //     pose: {
-        //       position: {
-        //         x: -p.z,
-        //         y: -p.x,
-        //         z: p.y
-        //       },
-        //       orientation: {
-        //         x: o.x,
-        //         y: o.y,
-        //         z: o.z,
-        //         w: o.w
-        //       }
-        //     }
-        //   });
-        //   poseStampedTopic.publish(poseStampedMsg);
-        // }
-
-      } else {
-        document.getElementById('pose').innerText = "Position: (null pose)";
-      }
-
-      debugText += `XR Input Sources: ${session.inputSources.length}\n`;
-
-      let handDetected = false; // 标记是否检测到手柄
-
-      for (let inputSource of session.inputSources) {
-          if (inputSource.gripSpace) {
-              let inputPose = frame.getPose(inputSource.gripSpace, xrRefSpace);
-              if (inputPose) {
-                  const ip = inputPose.transform.position;
-                  const io = inputPose.transform.orientation;
-                  handDetected = true; // 确保手柄被检测到
-
-                  // 根据左右手标记数据
-                  let handType = inputSource.handedness === "left" ? " Left Hand" : " Right Hand";
-
-                  // 显示在网页上
-                  debugText +=  
-                      `${handType} Position: ${ip.x.toFixed(3)}, ${ip.y.toFixed(3)}, ${ip.z.toFixed(3)}\n` +
-                      `${handType} Orientation: ${io.x.toFixed(3)}, ${io.y.toFixed(3)}, ${io.z.toFixed(3)}, ${io.w.toFixed(3)}\n`;
-              } else {
-                  debugText += `${inputSource.handedness} Hand Pose Not Available\n`;
-              }
-          } else {
-              debugText += `${inputSource.handedness} Hand No gripSpace detected\n`;
+      for (let source of session.inputSources) {
+        if (source.gripSpace) {
+          let controllerPose = frame.getPose(source.gripSpace, xrRefSpace);
+          if (controllerPose) {
+            let frame_id = source.handedness === 'left' ? 'left_controller' : 'right_controller';
+            publishPose(controllerPose, frame_id, poseControllerTopic, 'pose_controllers');
           }
-          if (!inputSource.gripSpace) {
-              console.warn(`[${inputSource.handedness} Hand] gripSpace is NULL`);
-          }
-      }
-
-      // 如果手柄没有被检测到，显示提示
-      if (!handDetected) {
-          debugText += "No VR controllers detected! Please check your controllers.\n";
-      }
-
-      if (session.inputSources.length === 0) {
-            debugText += "No VR controllers detected! Try pressing buttons on your controller.\n";
-            console.warn("No input sources detected! Try interacting with controllers.");
-        } else {
-            // 遍历 `inputSources`
-            session.inputSources.forEach((inputSource, index) => {
-                debugText += `Input Source ${index + 1}:\n`;
-                debugText += `  Handedness: ${inputSource.handedness}\n`;
-                debugText += `  Target Ray Mode: ${inputSource.targetRayMode}\n`;
-                debugText += `  Has Grip Space: ${!!inputSource.gripSpace}\n\n`;
-
-                if (!inputSource.gripSpace) {
-                    console.warn(`Input Source ${index + 1}: No gripSpace detected`);
-                }
-            });
         }
+        else{
+          debugText += "No source.gripSpace.\n";
+        }
+      }
 
-      // 显示调试信息在网页上
-      document.getElementById('debug-info').innerText = debugText;
     }
+
+    function publishPose(pose, frame_id, topic, displayId) {
+      const p = pose.transform.position;
+      const o = pose.transform.orientation;
+
+      let message = new ROSLIB.Message({
+        header: { frame_id: frame_id },
+        pose: {
+          position: { x: -p.z, y: -p.x, z: p.y },
+          orientation: { x: o.x, y: o.y, z: o.z, w: o.w }
+        }
+      });
+
+      topic.publish(message);
+
+      document.getElementById(displayId).innerText = frame_id + " Pose: " + 
+          "Position: " + p.x.toFixed(3) + ", " + p.y.toFixed(3) + ", " + p.z.toFixed(3) + "\n" +
+          "Orientation: " + o.x.toFixed(3) + ", " + o.y.toFixed(3) + ", " + o.z.toFixed(3) + ", " + o.w.toFixed(3) + "\n";
+      }
+    
 
     initXR();
   </script>
