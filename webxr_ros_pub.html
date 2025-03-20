@@ -1,24 +1,4 @@
 <!doctype html>
-<!--
-Copyright 2020 The Immersive Web Community Group
-
-Permission is hereby granted, free of charge, to any person obtaining a copy of
-this software and associated documentation files (the "Software"), to deal in
-the Software without restriction, including without limitation the rights to
-use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
-the Software, and to permit persons to whom the Software is furnished to do so,
-subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
-FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
-COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
-IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
--->
 <html>
 
 <head>
@@ -26,152 +6,73 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   <meta name='viewport' content='width=device-width, initial-scale=1, user-scalable=no'>
   <meta name='mobile-web-app-capable' content='yes'>
   <meta name='apple-mobile-web-app-capable' content='yes'>
-  <link rel='icon' type='image/png' sizes='32x32' href='favicon-32x32.png'>
-  <link rel='icon' type='image/png' sizes='96x96' href='favicon-96x96.png'>
-  <link rel='stylesheet' href='css/common.css'>
-
   <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/roslib@1/build/roslib.js"></script>
-
-  <title>Webxr ROS pub</title>
+  <title>WebXR Pose to ROS</title>
 </head>
 
 <body>
-  <div id="overlay">
-    <header>
-      <details open>
-        <summary>WebXR Pose to ROS</summary>
-        <p>
-          Run a webxr session, publish pose to ROS via rosbridge
-        </p>
-        <form id="rosbridge_settings_form" action="javascript:void(0);">
-          <label for="websocket_url">Websocket Url: </label>
-          <input type="text" id="websocket_url" name="websocket_url" value=wss://127.168.31.130:9090>
-          <input type="submit" value="Connect">
-        </form>
+  <header>
+    <details open>
+      <summary>WebXR Pose to ROS</summary>
+      <p>Publish WebXR Viewer & Controller Poses to ROS</p>
+      <form id="rosbridge_settings_form" action="javascript:void(0);">
+        <label for="websocket_url">WebSocket URL:</label>
+        <input type="text" id="websocket_url" value="wss://127.168.31.130:9090">
+        <input type="submit" value="Connect">
+      </form>
+      <div id="pose_viewer"></div>
+      <div id="pose_left_hand"></div>
+      <div id="pose_right_hand"></div>
+      <div id="debug-info"></div>
+      <button id="xr-button" disabled>XR not found</button>
+    </details>
+  </header>
 
-        <br><br>
-        <div id="session-info"></div>
-        <div id="pose"></div>
-        <div id="warning-zone"></div>
-        <button id="xr-button" class="barebones-button" disabled>XR not found</button>
-      </details>
-    </header>
-  </div>
-
-  <div id="debug-info" style="
-    position: absolute;
-    bottom: 10%;
-    left: 50%;
-    transform: translateX(-50%);
-    font-size: 24px;  /* 放大字体 */
-    width: 80%;  /* 调整宽度，防止换行 */
-    height: auto;
-    min-height: 200px;  /* 增加最小高度 */
-    max-height: 500px;  /* 限制最大高度 */
-    overflow-y: auto;  /* 允许滚动 */
-    color: rgb(198, 13, 13);
-    background-color: rgba(29, 137, 215, 0.8);  /* 更深的背景，提高对比度 */
-    padding: 20px;  /* 增大内边距 */
-    border-radius: 10px;  /* 圆角 */
-    white-space: pre-wrap; /* 保持换行 */
-    text-align: left;
-    z-index: 1000;
-  "></div>
-
-  <main style='text-align: center;'>
-    <p>Click 'Enter AR' to see content</p>
-  </main>
   <script type="module">
-
     var ros = null;
-    var poseStampedTopic = null;
+    var poseViewerTopic = null;
     var leftHandTopic = null;
-    var rightHandTopic = null;    
+    var rightHandTopic = null;
 
-    // connect to rosbridge when connect button pressed
     document.getElementById("rosbridge_settings_form").onsubmit = function () {
-      // roslib
-
-      var ws_url = this.elements.websocket_url.value
-      ros = new ROSLIB.Ros({
-        url: ws_url
-      });
+      ros = new ROSLIB.Ros({ url: this.elements.websocket_url.value });
 
       leftHandTopic = new ROSLIB.Topic({
-          ros: ros,
-          name: '/left_hand_pose',
-          messageType: 'geometry_msgs/PoseStamped'
+        ros: ros,
+        name: '/left_hand_pose',
+        messageType: 'geometry_msgs/PoseStamped'
       });
 
       rightHandTopic = new ROSLIB.Topic({
-          ros: ros,
-          name: '/right_hand_pose',
-          messageType: 'geometry_msgs/PoseStamped'
+        ros: ros,
+        name: '/right_hand_pose',
+        messageType: 'geometry_msgs/PoseStamped'
       });
 
-      poseStampedTopic = new ROSLIB.Topic({
+      poseViewerTopic = new ROSLIB.Topic({
         ros: ros,
         name: '/pose',
         messageType: 'geometry_msgs/PoseStamped'
       });
-
-      ros.on('connection', function () {
-        alert('Connected to websocket server.');
-      });
-      ros.on('error', function (error) {
-        alert('Error connecting to websocket server ' + ws_url + ': ', error);
-      });
-
-      ros.on('close', function () {
-        alert('Connection to websocket server closed.');
-      });
-
-
     };
 
-
-
-
-    // XR globals.
     let xrButton = document.getElementById('xr-button');
     let xrSession = null;
     let xrRefSpace = null;
 
-    // WebGL scene globals.
-    let gl = null;
-
-    function checkSupportedState() {
-      navigator.xr.isSessionSupported('immersive-ar').then((supported) => {
-        if (supported) {
-          xrButton.innerHTML = 'Enter AR';
-        } else {
-          xrButton.innerHTML = 'AR not found';
-        }
-
-        xrButton.disabled = !supported;
-      });
-    }
-
     function initXR() {
-      if (!window.isSecureContext) {
-        let message = "WebXR unavailable due to insecure context";
-        document.getElementById("warning-zone").innerText = message;
-      }
-
       if (navigator.xr) {
         xrButton.addEventListener('click', onButtonClicked);
-        navigator.xr.addEventListener('devicechange', checkSupportedState);
-        checkSupportedState();
+        navigator.xr.isSessionSupported('immersive-ar').then(supported => {
+          xrButton.innerHTML = supported ? 'Enter AR' : 'AR not found';
+          xrButton.disabled = !supported;
+        });
       }
     }
 
     function onButtonClicked() {
       if (!xrSession) {
-        // Ask for an optional DOM Overlay, see https://immersive-web.github.io/dom-overlays/
-        navigator.xr.requestSession('immersive-ar', {
-          optionalFeatures: ['dom-overlay'],
-          domOverlay: { root: document.getElementById('overlay') }
-        }).then(onSessionStarted, onRequestSessionError);
+        navigator.xr.requestSession('immersive-ar', { optionalFeatures: ['dom-overlay'] }).then(onSessionStarted);
       } else {
         xrSession.end();
       }
@@ -179,76 +80,37 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
     function onSessionStarted(session) {
       xrSession = session;
-      console.log("XR Session started");
       xrButton.innerHTML = 'Exit AR';
-
       session.requestReferenceSpace('local').then(refSpace => {
         xrRefSpace = refSpace;
         session.requestAnimationFrame(onXRFrame);
       });
-
-      xrSession.addEventListener("inputsourceschange", (event) => {
-          console.log("XR Input Sources Changed:", event);
-          console.log("Current Input Sources:", xrSession.inputSources);
-      });
-
-      // Show which type of DOM Overlay got enabled (if any)
-      if (session.domOverlayState) {
-        document.getElementById('session-info').innerHTML = 'DOM Overlay type: ' + session.domOverlayState.type;
-      }
-
-      session.addEventListener('end', onSessionEnded);
-
-      let canvas = document.createElement('canvas');
-      gl = canvas.getContext('webgl', {
-        xrCompatible: true
-      });
-      session.updateRenderState({ baseLayer: new XRWebGLLayer(session, gl) });
-    }
-
-    function onRequestSessionError(ex) {
-      alert("Failed to start immersive AR session.");
-      console.error(ex.message);
-    }
-
-    function onEndSession(session) {
-      session.end();
-    }
-
-    function onSessionEnded(event) {
-      xrSession = null;
-      xrButton.innerHTML = 'Enter AR';
-      document.getElementById('session-info').innerHTML = '';
-      gl = null;
     }
 
     function onXRFrame(t, frame) {
       let session = frame.session;
       session.requestAnimationFrame(onXRFrame);
-
-      let debugText = "WebXR Debug Info:\n";
-      let refSpace = xrRefSpace;
       
-      gl.bindFramebuffer(gl.FRAMEBUFFER, session.renderState.baseLayer.framebuffer);
-
+      let debugText = "WebXR Debug Info:\n";
+      debugText += `XR Input Sources: ${session.inputSources.length}\n`;
       let pose = frame.getViewerPose(xrRefSpace);
       if (pose) publishPose(pose, 'world', poseViewerTopic, 'pose_viewer');
-      
-      `XR Input Sources: ${session.inputSources.length}\n`
 
       for (let source of session.inputSources) {
         if (source.gripSpace) {
           let controllerPose = frame.getPose(source.gripSpace, xrRefSpace);
           if (controllerPose) {
             let frame_id = source.handedness === 'left' ? 'left_controller' : 'right_controller';
-            publishPose(controllerPose, frame_id, poseControllerTopic, 'pose_controllers');
+            let topic = source.handedness === 'left' ? leftHandTopic : rightHandTopic;
+            let displayId = source.handedness === 'left' ? 'pose_left_hand' : 'pose_right_hand';
+            publishPose(controllerPose, frame_id, topic, displayId);
+            debugText += `${frame_id} Pose Published\n`;
           }
-        }
-        else{
-          debugText += "No source.gripSpace.\n";
+        } else {
+          debugText += "No gripSpace available for an input source.\n";
         }
       }
-
+      document.getElementById("debug-info").innerText = debugText;
     }
 
     function publishPose(pose, frame_id, topic, displayId) {
@@ -262,23 +124,14 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           orientation: { x: o.x, y: o.y, z: o.z, w: o.w }
         }
       });
-
       topic.publish(message);
 
       document.getElementById(displayId).innerText = frame_id + " Pose: " + 
-          "Position: " + p.x.toFixed(3) + ", " + p.y.toFixed(3) + ", " + p.z.toFixed(3) + "\n" +
-          "Orientation: " + o.x.toFixed(3) + ", " + o.y.toFixed(3) + ", " + o.z.toFixed(3) + ", " + o.w.toFixed(3) + "\n";
-      }
-    
+        `Position(${p.x.toFixed(3)}, ${p.y.toFixed(3)}, ${p.z.toFixed(3)})\n` +
+        `Orientation(${o.x.toFixed(3)}, ${o.y.toFixed(3)}, ${o.z.toFixed(3)}, ${o.w.toFixed(3)})`;
+    }
 
     initXR();
   </script>
-
-  <script src="https://unpkg.com/vconsole@latest/dist/vconsole.min.js"></script>
-  <script>
-      var vConsole = new VConsole();
-      console.log("vConsole loaded!");
-  </script>
 </body>
-
 </html>
