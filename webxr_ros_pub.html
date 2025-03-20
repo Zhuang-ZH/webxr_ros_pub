@@ -193,6 +193,15 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       xrSession.addEventListener("inputsourceschange", (event) => {
           console.log("XR Input Sources Changed:", event);
           console.log("Current Input Sources:", xrSession.inputSources);
+          for (let source of xrSession.inputSources) {
+              if (source.handedness === 'left') {
+                  leftController = source;
+              } else if (source.handedness === 'right') {
+                  rightController = source;
+              }
+          }
+          console.log("Left Controller:", leftController);
+          console.log("Right Controller:", rightController);
       });
 
       // Show which type of DOM Overlay got enabled (if any)
@@ -225,33 +234,34 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       gl = null;
     }
 
+    function updateControllerPose(frame) {
+        if (leftController && leftController.gripSpace) {
+            let left_controller_pose = frame.getPose(leftController.gripSpace, xrRefSpace);
+            if (left_controller_pose) publishPose(pose, "left_controller", leftHandTopic, "pose_left_hand");
+        }
+
+        if (rightController && rightController.gripSpace) {
+            let right_controller_pose = frame.getPose(rightController.gripSpace, xrRefSpace);
+            if (right_controller_pose) publishPose(pose, "right_controller", rightHandTopic, "pose_right_hand");
+        }
+    }
+
     function onXRFrame(t, frame) {
       let session = frame.session;
       session.requestAnimationFrame(onXRFrame);
       
       let debugText = "WebXR Debug Info:\n";
       debugText += `XR Input Sources: ${session.inputSources.length}\n`;
-      let pose = frame.getViewerPose(xrRefSpace);
-      if (pose) publishPose(pose, 'world', poseViewerTopic, 'pose_viewer');
+      let viewerPose = frame.getViewerPose(xrRefSpace);
+      if (viewerPose) publishPose(pose, 'world', poseViewerTopic, 'pose_viewer');
 
       for (let source of session.inputSources) {
-        if (source.gripSpace) {
-          let controllerPose = frame.getPose(source.gripSpace, xrRefSpace);
-          if (controllerPose) {
-            let frame_id = source.handedness === 'left' ? 'left_controller' : 'right_controller';
-            let topic = source.handedness === 'left' ? leftHandTopic : rightHandTopic;
-            let displayId = source.handedness === 'left' ? 'pose_left_hand' : 'pose_right_hand';
-            publishPose(controllerPose, frame_id, topic, displayId);
-            debugText += `${frame_id} Pose Published\n`;
-          } else {
-            console.warn(`Failed to getPose for ${source.handedness} controller`);
-            continue;
-          }
-        } else {
-          debugText += "No gripSpace available for an input source.\n";
-          console.warn("Input Source has no gripSpace:", source);
-        }
+
+        console.log(`Checking input source: ${source.handedness}`);
+        
+        updateControllerPose(frame);
       }
+      
       document.getElementById("debug-info").innerText = debugText;
     }
 
