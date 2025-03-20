@@ -45,7 +45,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         </p>
         <form id="rosbridge_settings_form" action="javascript:void(0);">
           <label for="websocket_url">Websocket Url: </label>
-          <input type="text" id="websocket_url" name="websocket_url" value=wss://127.0.0.1:9090>
+          <input type="text" id="websocket_url" name="websocket_url" value=wss://127.168.31.130:9090>
           <input type="submit" value="Connect">
         </form>
 
@@ -57,6 +57,21 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       </details>
     </header>
   </div>
+
+  <div id="debug-info" style="
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 18px;
+    color: white;
+    background-color: rgba(0, 0, 0, 0.7);
+    padding: 10px;
+    border-radius: 5px;
+    white-space: pre-wrap;
+    z-index: 1000;
+  "></div>
+
   <main style='text-align: center;'>
     <p>Click 'Enter AR' to see content</p>
   </main>
@@ -199,7 +214,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
       let pose = frame.getViewerPose(xrRefSpace);
 
-      let outputText = "WebXR Debug Info:\n";
+      let debugText = "WebXR Debug Info:\n";
 
       if (pose) {
         const p = pose.transform.position;
@@ -208,6 +223,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           `Headset Position: ${p.x.toFixed(3)}, ${p.y.toFixed(3)}, ${p.z.toFixed(3)}\n` +
           `Headset Orientation: ${o.x.toFixed(3)}, ${o.y.toFixed(3)}, ${o.z.toFixed(3)}, ${o.w.toFixed(3)}\n`;
 
+        debugText += ` Headset Position: ${p.x.toFixed(3)}, ${p.y.toFixed(3)}, ${p.z.toFixed(3)}\n`;
+        debugText += ` Headset Orientation: ${o.x.toFixed(3)}, ${o.y.toFixed(3)}, ${o.z.toFixed(3)}, ${o.w.toFixed(3)}\n`;
         // if (ros) {
         //   var poseStampedMsg = new ROSLIB.Message({
         //     header: {
@@ -234,7 +251,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         document.getElementById('pose').innerText = "Position: (null pose)";
       }
 
-      outputText += `XR Input Sources: ${session.inputSources.length}\n`;
+      debugText += `XR Input Sources: ${session.inputSources.length}\n`;
 
       let handDetected = false; // 标记是否检测到手柄
 
@@ -250,14 +267,14 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                   let handType = inputSource.handedness === "left" ? " Left Hand" : " Right Hand";
 
                   // 显示在网页上
-                  outputText += 
+                  debugText +=  
                       `${handType} Position: ${ip.x.toFixed(3)}, ${ip.y.toFixed(3)}, ${ip.z.toFixed(3)}\n` +
                       `${handType} Orientation: ${io.x.toFixed(3)}, ${io.y.toFixed(3)}, ${io.z.toFixed(3)}, ${io.w.toFixed(3)}\n`;
               } else {
-                  outputText += `${inputSource.handedness} Hand Pose Not Available\n`;
+                  debugText += `${inputSource.handedness} Hand Pose Not Available\n`;
               }
           } else {
-              outputText += `${inputSource.handedness} Hand No gripSpace detected\n`;
+              debugText += `${inputSource.handedness} Hand No gripSpace detected\n`;
           }
           if (!inputSource.gripSpace) {
               console.warn(`[${inputSource.handedness} Hand] gripSpace is NULL`);
@@ -266,11 +283,12 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
       // 如果手柄没有被检测到，显示提示
       if (!handDetected) {
-          outputText += "No VR controllers detected! Please check your controllers.\n";
+          debugText += "No VR controllers detected! Please check your controllers.\n";
       }
 
       // 显示调试信息在网页上
       document.getElementById('pose').innerText = outputText;
+      document.getElementById('debug-info').innerText = debugText;
     }
 
     initXR();
