@@ -139,6 +139,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     let xrButton = document.getElementById('xr-button');
     let xrSession = null;
     let xrRefSpace = null;
+    let leftController = null;
+    let rightController = null;
 
     // WebGL scene globals.
     let gl = null;
@@ -261,7 +263,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         
         updateControllerPose(frame);
       }
-      
+
       document.getElementById("debug-info").innerText = debugText;
     }
 
