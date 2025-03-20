@@ -227,11 +227,11 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           poseStampedTopic.publish(poseStampedMsg);
         }
 
-
-
       } else {
         document.getElementById('pose').innerText = "Position: (null pose)";
       }
+
+      let handDetected = false; // 标记是否检测到手柄
 
       for (let inputSource of session.inputSources) {
           if (inputSource.gripSpace) {
@@ -239,20 +239,20 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
               if (inputPose) {
                   const ip = inputPose.transform.position;
                   const io = inputPose.transform.orientation;
+                  handDetected = true; // 确保手柄被检测到
 
-                  // 调试信息（控制台日志）
-                  console.log(`[${inputSource.handedness} Hand] Position: (${ip.x.toFixed(3)}, ${ip.y.toFixed(3)}, ${ip.z.toFixed(3)})`);
-                  console.log(`[${inputSource.handedness} Hand] Orientation: (${io.x.toFixed(3)}, ${io.y.toFixed(3)}, ${io.z.toFixed(3)}, ${io.w.toFixed(3)})`);
+                  // 根据左右手标记数据
+                  let handType = inputSource.handedness === "left" ? " Left Hand" : " Right Hand";
 
-                  // 显示在页面上
-                  document.getElementById('pose').innerText += 
-                      `[${inputSource.handedness} Hand] Position: ${ip.x.toFixed(3)}, ${ip.y.toFixed(3)}, ${ip.z.toFixed(3)}\n` +
-                      `[${inputSource.handedness} Hand] Orientation: ${io.x.toFixed(3)}, ${io.y.toFixed(3)}, ${io.z.toFixed(3)}, ${io.w.toFixed(3)}\n`;
+                  // 显示在网页上
+                  outputText += 
+                      `${handType} Position: ${ip.x.toFixed(3)}, ${ip.y.toFixed(3)}, ${ip.z.toFixed(3)}\n` +
+                      `${handType} Orientation: ${io.x.toFixed(3)}, ${io.y.toFixed(3)}, ${io.z.toFixed(3)}, ${io.w.toFixed(3)}\n`;
               } else {
-                  console.warn(`[${inputSource.handedness} Hand] No pose data available.`);
+                  outputText += `${inputSource.handedness} Hand Pose Not Available\n`;
               }
           } else {
-              console.warn(`[${inputSource.handedness} Hand] No gripSpace detected.`);
+              outputText += `${inputSource.handedness} Hand No gripSpace detected\n`;
           }
       }
     }
