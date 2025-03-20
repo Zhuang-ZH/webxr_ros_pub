@@ -185,9 +185,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           console.log("XR Input Sources Changed:", event);
           console.log("Current Input Sources:", xrSession.inputSources);
       });
-      xrSession.requestReferenceSpace("local-floor").then((refSpace) => {
-          xrRefSpace = refSpace;
-      });
 
       // Show which type of DOM Overlay got enabled (if any)
       if (session.domOverlayState) {
