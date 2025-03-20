@@ -202,12 +202,27 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                   rightController = source;
               }
           }
-          console.log("Left Controller:", leftController);
-          // console.log("Right Controller:", rightController);
-          console.log("Left Controller Pose:", leftController ? frame.getPose(leftController.gripSpace, xrRefSpace) : "No left controller");
+          console.log("Left Controller Assigned:", leftController);
+          console.log("Right Controller Assigned:", rightController);
+          
+          // console.log("Left Controller Pose:", leftController ? frame.getPose(leftController.gripSpace, xrRefSpace) : "No left controller");
           // console.log("Right Controller Pose:", rightController ? frame.getPose(rightController.gripSpace, xrRefSpace) : "No right controller");
 
       });
+
+      setTimeout(() => {
+          console.log("Checking existing input sources...");
+          for (let source of session.inputSources) {
+              if (source.handedness === 'left') {
+                  leftController = source;
+              } else if (source.handedness === 'right') {
+                  rightController = source;
+              }
+          }
+          console.log("Left Controller Found:", leftController);
+          console.log("Right Controller Found:", rightController);
+      }, 3000);
+
 
       // Show which type of DOM Overlay got enabled (if any)
       if (session.domOverlayState) {
