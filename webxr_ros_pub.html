@@ -85,6 +85,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
     var ros = null;
     var poseStampedTopic = null;
+    var leftHandTopic = null;
+    var rightHandTopic = null;    
 
     // connect to rosbridge when connect button pressed
     document.getElementById("rosbridge_settings_form").onsubmit = function () {
@@ -293,7 +295,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       }
 
       // 显示调试信息在网页上
-      document.getElementById('pose').innerText = outputText;
       document.getElementById('debug-info').innerText = debugText;
     }
 
