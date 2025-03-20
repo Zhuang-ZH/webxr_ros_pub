@@ -179,7 +179,15 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
     function onSessionStarted(session) {
       xrSession = session;
+      console.log("XR Session started");
       xrButton.innerHTML = 'Exit AR';
+      xrSession.addEventListener("inputsourceschange", (event) => {
+          console.log("XR Input Sources Changed:", event);
+          console.log("Current Input Sources:", xrSession.inputSources);
+      });
+      xrSession.requestReferenceSpace("local-floor").then((refSpace) => {
+          xrRefSpace = refSpace;
+      });
 
       // Show which type of DOM Overlay got enabled (if any)
       if (session.domOverlayState) {
@@ -192,7 +200,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         xrCompatible: true
       });
       session.updateRenderState({ baseLayer: new XRWebGLLayer(session, gl) });
-      session.requestReferenceSpace('local').then((refSpace) => {
+      session.requestReferenceSpace('local-floor').then((refSpace) => {
         xrRefSpace = refSpace;
         session.requestAnimationFrame(onXRFrame);
       });
@@ -293,6 +301,23 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       if (!handDetected) {
           debugText += "No VR controllers detected! Please check your controllers.\n";
       }
+
+      if (session.inputSources.length === 0) {
+            debugText += "No VR controllers detected! Try pressing buttons on your controller.\n";
+            console.warn("No input sources detected! Try interacting with controllers.");
+        } else {
+            // 遍历 `inputSources`
+            session.inputSources.forEach((inputSource, index) => {
+                debugText += `Input Source ${index + 1}:\n`;
+                debugText += `  Handedness: ${inputSource.handedness}\n`;
+                debugText += `  Target Ray Mode: ${inputSource.targetRayMode}\n`;
+                debugText += `  Has Grip Space: ${!!inputSource.gripSpace}\n\n`;
+
+                if (!inputSource.gripSpace) {
+                    console.warn(`Input Source ${index + 1}: No gripSpace detected`);
+                }
+            });
+        }
 
       // 显示调试信息在网页上
       document.getElementById('debug-info').innerText = debugText;
