@@ -59,21 +59,19 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   </div>
 
   <div id="debug-info" style="
-    position: absolute;
-    top: 10%;
+    position: fixed;
+    bottom: 10px;  /* 放到页面底部 */
     left: 50%;
     transform: translateX(-50%);
-    font-size: 24px;  /* 放大字体 */
-    width: 80%;  /* 调整宽度，防止换行 */
-    height: auto;
-    min-height: 200px;  /* 增加最小高度 */
-    max-height: 500px;  /* 限制最大高度 */
+    font-size: 20px;  /* 适中字体 */
+    width: 90%;  /* 适应屏幕宽度 */
+    max-height: 300px;  /* 限制最大高度 */
     overflow-y: auto;  /* 允许滚动 */
     color: rgb(198, 13, 13);
     background-color: rgba(54, 180, 25, 0.8);  /* 更深的背景，提高对比度 */
-    padding: 20px;  /* 增大内边距 */
-    border-radius: 10px;  /* 圆角 */
-    white-space: pre-wrap; /* 保持换行 */
+    padding: 15px;
+    border-radius: 8px;
+    white-space: pre-wrap;
     text-align: left;
     z-index: 1000;
   "></div>
